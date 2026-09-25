@@ -22,6 +22,7 @@ func NewRouter(authH *AuthHandler, taskH *TaskHandler, jwtIssuer *auth.JWTIssuer
 	mux.HandleFunc("DELETE /tasks/{id}", requireAuth(jwtIssuer, taskH.Delete))
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello, you found me!\n"))
 		w.WriteHeader(http.StatusOK)
 	})
 
