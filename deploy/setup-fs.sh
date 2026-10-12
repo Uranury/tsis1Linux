@@ -6,11 +6,15 @@
 #        sudo ./setup-fs.sh db     # on the db instance (PostgreSQL)
 #
 # Optional: DEPLOY_USER=<user> sudo -E ./setup-fs.sh app
-#           (the account CI/you use to upload releases; defaults to ubuntu)
+#           (the account CI/you use to upload releases; defaults to deploy)
+#
+# Optional: DEPLOY_GROUP=<group> sudo -E ./setup-fs.sh app
+#           (the group of users allowed to deploy; defaults to deployers)
 set -euo pipefail
 
 APP=tsis1linux
-DEPLOY_USER="${DEPLOY_USER:-ubuntu}"
+DEPLOY_USER="${DEPLOY_USER:-deploy}"
+DEPLOY_GROUP="${DEPLOY_GROUP:-deployers}"
 ROLE="${1:-}"
 
 [[ $EUID -eq 0 ]] || { echo "run as root (use sudo)" >&2; exit 1; }
@@ -30,6 +34,9 @@ write_if_missing() {
 }
 
 setup_app() {
+  id "$DEPLOY_USER" &>/dev/null || { echo "user $DEPLOY_USER missing; run setup-users.sh first" >&2; exit 1; }
+  getent group "$DEPLOY_GROUP" &>/dev/null || { echo "group $DEPLOY_GROUP missing; run setup-users.sh first" >&2; exit 1; }
+
   # Unprivileged account the API runs as: no login shell, no home directory.
   if ! id "$APP" &>/dev/null; then
     useradd --system --user-group --no-create-home --shell /usr/sbin/nologin "$APP"
@@ -37,7 +44,7 @@ setup_app() {
   fi
 
   # Binaries: one directory per release, "current" symlink points at the live one.
-  install -d -m 755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "/opt/$APP" "/opt/$APP/releases"
+  install -d -m 755 -o "$DEPLOY_USER" -g "$DEPLOY_GROUP" "/opt/$APP" "/opt/$APP/releases"
 
   # Configuration: systemd reads the env file as root, so root-only is enough.
   install -d -m 750 -o root -g root "/etc/$APP"
