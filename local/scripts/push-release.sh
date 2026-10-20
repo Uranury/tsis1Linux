@@ -1,14 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-set -u
-
-[[ "$#" -eq 2 ]] || { echo "Usage: $0 <path-to-bin> <dest>" >&2; exit 1; }
+[[ $# -eq 2 ]] || { echo "Usage: $0 <path-to-bin> <version>" >&2; exit 1; }
 
 binary="$1"
-dest="app-deploy:$2"
+version="$2"
+rel="/opt/tsis1linux/releases/$version"
 
-if ! error=$(scp "$binary" "$dest" 2>&1); then
-	echo "Failed to copy the binary, error: $error" >&2
-	exit 1
-fi
-echo "Success"
+ssh app-deploy "mkdir -p '$rel'"
+scp "$binary" "app-deploy:$rel/tsis1linux" || { echo "Failed to copy the binary" >&2; exit 1; }
+ssh app-deploy "chmod 755 '$rel/tsis1linux'"
+echo "uploaded $version"
