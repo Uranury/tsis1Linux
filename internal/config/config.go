@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Port            string
+	ListenHost      string
 	DatabaseURL     string
 	JWTSecret       string
 	AccessTokenTTL  time.Duration
@@ -18,6 +19,7 @@ type Config struct {
 
 func Load() (*Config, error) {
 	cfg := &Config{
+		ListenHost:  getEnv("LISTEN_HOST", "127.0.0.1"),
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		JWTSecret:   os.Getenv("JWT_SECRET"),
