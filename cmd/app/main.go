@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -64,7 +65,7 @@ func run() error {
 	router := handler.NewRouter(authHandler, taskHandler, jwtIssuer)
 
 	srv := &http.Server{
-		Addr:              ":" + cfg.Port,
+		Addr:              net.JoinHostPort(cfg.ListenHost, cfg.Port),
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
