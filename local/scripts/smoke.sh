@@ -60,13 +60,15 @@ fi
 
 echo
 echo "== API flow through nginx =="
+
 email="smoke-$(date +%s)-$RANDOM@example.com"
+user="smoke-$RANDOM"
 pw="Smoke-$RANDOM-test"
 
 r=$(api GET /healthz)
 [[ $(status_of "$r") == 200 ]] && pass "GET /healthz" || fail "GET /healthz ($r)"
 
-r=$(api POST /auth/register "{\"email\":\"$email\",\"password\":\"$pw\"}")
+r=$(api POST /auth/register "{\"username\":\"$user\",\"email\":\"$email\",\"password\":\"$pw\"}")
 [[ $(status_of "$r") =~ ^2 ]] && pass "register" || fail "register ($r)"
 
 r=$(api POST /auth/login "{\"email\":\"$email\",\"password\":\"$pw\"}")
@@ -88,11 +90,16 @@ else
 	fail "list tasks ($r)"
 fi
 
-r=$(api POST /auth/logout "{\"refresh_token\":\"$refresh\"}")
-[[ $(status_of "$r") =~ ^2 ]] && pass "logout" || fail "logout ($r)"
+if [[ -z $refresh ]]; then
+	fail "logout (skipped: no refresh token from login)"
+	fail "revoked refresh token (skipped: no refresh token from login)"
+else
+	r=$(api POST /auth/logout "{\"refresh_token\":\"$refresh\"}")
+	[[ $(status_of "$r") =~ ^2 ]] && pass "logout" || fail "logout ($r)"
 
-r=$(api POST /auth/refresh "{\"refresh_token\":\"$refresh\"}")
-[[ $(status_of "$r") =~ ^4 ]] && pass "revoked refresh token is rejected" || fail "refresh after logout ($r)"
+	r=$(api POST /auth/refresh "{\"refresh_token\":\"$refresh\"}")
+	[[ $(status_of "$r") == 401 ]] && pass "revoked refresh token is rejected (401)" || fail "refresh after logout ($r)"
+fi
 
 echo
 echo "== $passed passed, $failed failed =="
